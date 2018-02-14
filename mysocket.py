@@ -13,7 +13,7 @@ __all__ = [
 
 def myconnect(host, port):
   sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-  log.info("Connecting to (%s %d)" % (host, port))
+  log.info("Connecting to (%s %d) ..." % (host, port))
   sock.connect((host, port))
   log.indented("Connected")
   return sock
@@ -25,7 +25,7 @@ def recvuntil(s, pattern):
   return buf
 
 def telnet(s):
-  log.info('Telneting to socket')
+  log.info('Telneting to socket ...')
   t = telnetlib.Telnet()
   t.sock = s
   t.interact()

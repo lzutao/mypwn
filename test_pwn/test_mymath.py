@@ -5,7 +5,7 @@ from mypwn.mymath import *
 class TestMyMath(unittest.TestCase):
 	def test_Checksum(self):
 		print("\nTesting mypwn.mymath.Checksum class ...")
-		filepath = '../mypwn/LICENSE'
+		filepath = '../LICENSE'
 		LICENSE_sha256 = '83915bf9601d28b10378f57d17e47b686e5d584979ebba50ef6eb5ac3d2b654a'
 		LICENSE_sha1   = 'b412883eb74a0bb7cd2aa0cb221137678a876ff8'
 		LICENSE_md5    = '5a57e6c0fd3f83f420a708ef88294d46'

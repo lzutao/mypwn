@@ -9,24 +9,23 @@ from Crypto import Random
 from Crypto.Cipher import AES
 from base64 import b64encode, b64decode
 
-# try:
-#     import gmpy2
-#     _bitLength = gmpy2.bit_length
-#     _divMod = gmpy2.f_divmod
-#     _extendedGCD = gmpy2.gcdext
-#     _gcd = gmpy2.gcd
-#     _iRoot = gmpy2.iroot
-#     _iSqrt = gmpy2.isqrt
-#     def _perfectSqrt(x):
-#         s, r = gmpy2.isqrt_rem(x)
-#         return s if r == 0 else -1
-#     # f_mod(x, y int) -- The remainder will have the same sign as y
-#     _mod = gmpy2.f_mod
-#     _modInverse = gmpy2.invert
-#     _mulProduct = gmpy2.mul
-#     _mpz = gmpy2.mpz
-# except ImportError:
-if True:
+try:
+    import gmpy2
+    _bitLength = gmpy2.bit_length
+    _divMod = gmpy2.f_divmod
+    _extendedGCD = gmpy2.gcdext
+    _gcd = gmpy2.gcd
+    _iRoot = gmpy2.iroot
+    _iSqrt = gmpy2.isqrt
+    def _perfectSqrt(x):
+        s, r = gmpy2.isqrt_rem(x)
+        return s if r == 0 else -1
+    # f_mod(x, y int) -- The remainder will have the same sign as y
+    _mod = gmpy2.f_mod
+    _modInverse = gmpy2.invert
+    _mulProduct = gmpy2.mul
+    _mpz = gmpy2.mpz
+except ImportError:
     try:
         int.bit_length(1)
         def _bitLength(x):
@@ -44,7 +43,8 @@ if True:
             return n
 
     def _divMod(x, y):
-        '''Returns the quotient and remainder of x divided by y.
+        '''
+        Returns the quotient and remainder of x divided by y.
         The quotient is floor rounding and the remainder will have the same sign as y.
         x and y must be integers.
         '''
@@ -52,7 +52,7 @@ if True:
 
     def _extendedGCD(a, b):
 
-        '''Returns (g, x, y) and such that a*x + b*y = g and g = gcd(a,b)'''
+        '''Returns (g, x, y) and such that a*s + b*t = g and g = gcd(a,b)'''
 
         (s, old_s) = (0, 1)
         (t, old_t) = (1, 0)
@@ -123,13 +123,10 @@ if True:
 
     def _mod(a,b): return a%b
 
-class RSACipher:
+
+class RSACipher(object):
 
     """Mostly stuffs for RSA"""
-
-    @staticmethod
-    def gcd(a,b):
-        return _gcd(a,b)
 
     @staticmethod
     def continued_fraction(n, m=1):
@@ -195,6 +192,10 @@ class RSACipher:
                 yield c
 
     @staticmethod
+    def gcd(a,b):
+        return _gcd(a,b)
+
+    @staticmethod
     def extended_gcd(a, b):
 
         '''Returns (g, x, y) and such that a*x + b*y = g and g = gcd(a,b)'''
@@ -212,10 +213,10 @@ class RSACipher:
     @staticmethod
     def chinese_remainder(n, a):
         '''
-            Returns x (int) such that
-                x = a_i (mod n_i) for i := 1 -> k
+        Returns x (int) such that
+            x = a_i (mod n_i) for i := 1 -> k
 
-            Reference: https://rosettacode.org/wiki/Chinese_remainder_theorem
+        Reference: https://rosettacode.org/wiki/Chinese_remainder_theorem
 	    '''
 
         prod = reduce(_mulProduct, n) # reduce is faster than equivalent for loop
@@ -228,22 +229,22 @@ class RSACipher:
     @staticmethod
     def iroot(x, n):
         '''
-            Returns (y, exact) (int, bool) such that y**n = x
-            @param n: (int) > 0
-            @param x: (int) >= 0
+        Returns (y, exact) (int, bool) such that y**n = x
+        @param n: (int) > 0
+        @param x: (int) >= 0
         '''
         return _iRoot(x, n)
 
     @staticmethod
     def hastad_broadcast_attack(N, C):
         '''
-            Retunrs plain text m in form long type such that e=len(N)=len(C) and
-            e is small and we knew `e' pairs module n, ciphertext c
+        Retunrs plain text m in form long type such that e=len(N)=len(C) and
+        e is small and we knew `e' pairs module n, ciphertext c
 
-            In short, returns m if
-                c_i = (m**k) (mod n_i) for i: 1->k
-            With chinese remainder theorem:
-                c'  = (m**k) (mod n_1*n_2*..*n_k) for i: 1->k
+        In short, returns m if
+            c_i = (m**k) (mod n_i) for i: 1->k
+        With chinese remainder theorem:
+            c'  = (m**k) (mod n_1*n_2*..*n_k) for i: 1->k
 	    '''
         e = len(N)
         assert(e == len(C))
@@ -263,19 +264,21 @@ class RSACipher:
 
         The RSA keys are obtained as follows:
         1. Choose two prime numbers p and q
-        2. Compute n=pq
-        3. Compute phi(n)=(p-1)(q-1)
-        4. Choose e coprime to phi(n) such that gcd(e,n)=1
-        5. Compute d = e^(-1) mod (phi(n))
-        6. e is the publickey; n is also made public (determines the block size); d is the privatekey
+        2. Compute n=p*q
+        3. Compute phi(n)=(p-1)*(q-1)
+        4. Choose e such that 1 < e < phi(n); e and phi(n) are coprime
+        5. Compute d = e^(-1) (mod phi(n))
+        6. e is the public key;
+           n is also made public (determines the block size);
+           d is the private key
 
         Encryption is as follows:
         1. Size of data to be encrypted must be less than n
-        2. ciphertext=pow(plaintext,publickey,n)
+        2. ciphertext=pow(plaintext, e, n)
 
         Decryption is as follows:
         1. Size of data to be decrypted must be less than n
-        2. plaintext=pow(ciphertext,privatekey,n)
+        2. plaintext=pow(ciphertext, d, n)
         '''
         frac = RSACipher.continued_fraction(e, n)
         convergents = RSACipher.continued_fraction_convergents(frac)
@@ -295,7 +298,7 @@ class RSACipher:
         return -1
 
 
-class AESCipher:
+class AESCipher(object):
     '''
     Reference:
     + http://pythonhosted.org/pycrypto/
@@ -308,6 +311,8 @@ class AESCipher:
 
         # key (byte string) - The secret key to use in the symmetric cipher.
         #     It must be 16 (AES-128), 24 (AES-192), or 32 (AES-256) bytes long.
+        # key must be hash by sha256, md5 before pass to this class
+        # Why hash key? To len(key) in AES.key_size
 
         assert mode in (AES.MODE_ECB, AES.MODE_CBC)
         assert len(key) in AES.key_size
@@ -315,14 +320,17 @@ class AESCipher:
         self.bs = AES.block_size
         self.mode = mode
 
+    def __repr__(self):
+        return "AESCipher(key=%r, mode=%r)" % (self.key, self.mode)
+
     def encrypt(self, raw):
         """Encrypt using AES in CBC or ECB mode."""
 
         raw = self.pad(raw)
-        iv = (Random.new().read(self.bs) if self.mode
-              == AES.MODE_CBC else '')
-        cipher = AES.new(key=self.key, mode=self.mode, IV=iv)
-        return b64encode(iv + cipher.encrypt(raw))
+        iv = (Random.new().read(self.bs) if (self.mode == AES.MODE_CBC)
+              else '')
+        aes = AES.new(key=self.key, mode=self.mode, IV=iv)
+        return b64encode(iv + aes.encrypt(raw))
 
     def decrypt(self, enc):
         """Decrypt using AES in CBC mode. Expects the IV at the front of the string."""
@@ -333,8 +341,8 @@ class AESCipher:
             enc = enc[self.bs:]
         else:
             iv = ''
-        cipher = AES.new(key=self.key, mode=self.mode, IV=iv)
-        dec = cipher.decrypt(enc)
+        aes = AES.new(key=self.key, mode=self.mode, IV=iv)
+        dec = aes.decrypt(enc)
         return self.unpad(dec)
 
     def unpad(self, text):

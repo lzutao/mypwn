@@ -14,7 +14,7 @@ def unhex(s):
   elif isinstance(s, (int, long)):
     s = hex(s)[2:]
   else:
-    raise TypeError("Type must be string or intergral.")
+    raise TypeError("Type must be string or integral.")
 
   val = s.replace('L', '')
 
