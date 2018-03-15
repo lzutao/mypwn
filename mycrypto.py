@@ -3,7 +3,7 @@
 
 # In Debian, install `apt install python-crypto`
 
-__all__ = ['AESCipher', 'RSACipher']
+__all__ = ['AESCipher', 'RSACipher', 'Checksum']
 
 from Crypto import Random
 from Crypto.Cipher import AES
@@ -26,6 +26,7 @@ try:
     _mulProduct = gmpy2.mul
     _mpz = gmpy2.mpz
 except ImportError:
+# if True:
     try:
         int.bit_length(1)
         def _bitLength(x):
@@ -43,29 +44,31 @@ except ImportError:
             return n
 
     def _divMod(x, y):
-        '''
-        Returns the quotient and remainder of x divided by y.
-        The quotient is floor rounding and the remainder will have the same sign as y.
-        x and y must be integers.
-        '''
+        '''_divMod(x, y) -> (q, r)
+Returns the quotient and remainder of x divided by y.
+The quotient is floor rounding and the remainder will have the same sign as y.
+x and y must be integers.
+'''
         return divmod(x, y)
 
     def _extendedGCD(a, b):
 
-        '''Returns (g, x, y) and such that a*s + b*t = g and g = gcd(a,b)'''
+        '''_extendedGCD(a, b) -> (g, s, t)
+Returns (g, s, t) and such that a*s + b*t = g and g = gcd(a,b)
+'''
 
         (s, old_s) = (0, 1)
         (t, old_t) = (1, 0)
         (r, old_r) = (b, a)
 
         while r != 0:
-            (div, mod) = _divMod(old_r, r)
+            (quotient, mod) = _divMod(old_r, r)
             (old_r, r) = (r, mod)
-            (old_s, s) = (s, old_s - div * s)
-            (old_t, t) = (t, old_t - div * t)
+            (old_s, s) = (s, old_s - quotient*s)
+            (old_t, t) = (t, old_t - quotient*t)
 
-        g, x, y = old_r, old_s, old_t
-        return (g, x, y)
+        g, s, t = old_r, old_s, old_t
+        return (g, s, t)
 
     def _gcd(a,b):
         from fractions import gcd as greatest_common_divisor
@@ -197,7 +200,6 @@ class RSACipher(object):
 
     @staticmethod
     def extended_gcd(a, b):
-
         '''Returns (g, x, y) and such that a*x + b*y = g and g = gcd(a,b)'''
         return _extendedGCD(a, b)
 
@@ -361,3 +363,29 @@ class AESCipher(object):
         pad_num = self.bs - len(text) % self.bs
         return text + chr(pad_num) * pad_num
 
+
+class Checksum():
+    @staticmethod
+    def _hashlib_wrapper(method, filename, block_size):
+        check_sum_fun = method()
+        with open(filename, 'rb') as fd:
+            for block in iter(lambda: fd.read(block_size), b''):
+                check_sum_fun.update(block)
+        return check_sum_fun.hexdigest()
+
+    @staticmethod
+    def sha256sum(filename, block_size=65536):
+        '''Return sha256 sum of a file
+Efficency when works with many file
+'''
+        return Checksum._hashlib_wrapper(hashlib.sha256, filename, block_size)
+
+    @staticmethod
+    def sha1sum(filename, block_size=65536):
+    '''Return sha1 sum of a file'''
+        return Checksum._hashlib_wrapper(hashlib.sha1, filename, block_size)
+
+    @staticmethod
+    def md5sum(filename, block_size=65536):
+    '''Return md5 sum of a file'''
+        return Checksum._hashlib_wrapper(hashlib.md5, filename, block_size)

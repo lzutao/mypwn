@@ -71,29 +71,3 @@ class Convert():
     s = p64(ll)
     return unpack('<d', s)[0]
 
-
-class Checksum():
-  @staticmethod
-  def _hashlib_wrapper(method, filename, block_size):
-    check_sum_fun = method()
-    with open(filename, 'rb') as fd:
-      for block in iter(lambda: fd.read(block_size), b''):
-        check_sum_fun.update(block)
-    return check_sum_fun.hexdigest()
-
-  @staticmethod
-  def sha256sum(filename, block_size=65536):
-    '''Return sha256 sum of a file
-    Efficency when works with many file
-    '''
-    return Checksum._hashlib_wrapper(hashlib.sha256, filename, block_size)
-
-  @staticmethod
-  def sha1sum(filename, block_size=65536):
-    '''Return sha1 sum of a file'''
-    return Checksum._hashlib_wrapper(hashlib.sha1, filename, block_size)
-
-  @staticmethod
-  def md5sum(filename, block_size=65536):
-    '''Return md5 sum of a file'''
-    return Checksum._hashlib_wrapper(hashlib.md5, filename, block_size)
